@@ -74,7 +74,8 @@ public:
     
 signals:
     void zoomLevelChanged(quint8 nZoom);
-    
+    void currentPosChanged(QPointF &pos);
+
 public slots:
 
 protected slots:

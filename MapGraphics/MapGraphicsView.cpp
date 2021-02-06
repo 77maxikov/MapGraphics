@@ -31,7 +31,7 @@ MapGraphicsView::MapGraphicsView(MapGraphicsScene *scene, QWidget *parent) :
             SIGNAL(timeout()),
             this,
             SLOT(renderTiles()));
-    renderTimer->start(200);
+    renderTimer->start(200);    
 }
 
 MapGraphicsView::~MapGraphicsView()
@@ -83,7 +83,7 @@ void MapGraphicsView::centerOn(const QPointF &pos)
         return;
 
     //Find the QGraphicsScene coordinate of the position and then tell the childView to center there
-    QPointF qgsPos = _tileSource->ll2qgs(pos,this->zoomLevel());
+    QPointF qgsPos = _tileSource->lalo2qgs(pos,this->zoomLevel());
 
     _childView->centerOn(qgsPos);
 }
@@ -110,9 +110,13 @@ QPointF MapGraphicsView::mapToScene(const QPoint viewPos) const
     QPointF qgsScenePos = _childView->mapToScene(viewPos);
 
     //Convert from QGraphicsScene coordinates to geo (MapGraphicsScene) coordinates
-    const quint8 zoom = this->zoomLevel();
-
-    return _tileSource->qgs2ll(qgsScenePos,zoom);
+/*
+    QPointF lalo = _tileSource->qgs2lalo(qgsScenePos,zoomLevel());
+    qDebug() << "MapGraphicsView::mapToScene" ;
+    qDebug() << "View x " << viewPos.x() << " QGS x " << qgsScenePos.x() << " lat " << lalo.x();
+    qDebug() << "View y " << viewPos.y() << " QGS y " << qgsScenePos.y() << " lon " << lalo.y();
+*/
+    return _tileSource->qgs2lalo(qgsScenePos,this->zoomLevel());
 }
 
 MapGraphicsView::DragMode MapGraphicsView::dragMode() const
@@ -136,6 +140,7 @@ void MapGraphicsView::setDragMode(MapGraphicsView::DragMode mode)
         return;
 
     _childView->setDragMode(qgvDragMode);
+    _childView->setCursor(Qt::ArrowCursor);
 }
 
 MapGraphicsScene *MapGraphicsView::scene() const
@@ -159,7 +164,7 @@ void MapGraphicsView::setScene(MapGraphicsScene * scene)
             SLOT(handleZoomLevelChanged()));
 
     //Create a QGraphicsView that handles drawing for us
-    PrivateQGraphicsView * childView = new PrivateQGraphicsView(childScene, this);
+    PrivateQGraphicsView * childView = new PrivateQGraphicsView(childScene, this);    
     connect(childView,
             SIGNAL(hadMouseDoubleClickEvent(QMouseEvent*)),
             this,
@@ -184,6 +189,8 @@ void MapGraphicsView::setScene(MapGraphicsScene * scene)
             SIGNAL(hadContextMenuEvent(QContextMenuEvent*)),
             this,
             SLOT(handleChildViewContextMenu(QContextMenuEvent*)));
+
+    childView->setMouseTracking(true);
 
     //Insert new stuff
     if (this->layout() != 0)
@@ -321,7 +328,11 @@ void MapGraphicsView::handleChildMouseDoubleClick(QMouseEvent *event)
 //protected slot
 void MapGraphicsView::handleChildMouseMove(QMouseEvent *event)
 {
+    QPointF scenepo = mapToScene(QPoint(event->x(),event->y()));
+    currentPosChanged(scenepo);
+    //event->setAccepted(true);
     event->setAccepted(false);
+
 }
 
 //protected slot

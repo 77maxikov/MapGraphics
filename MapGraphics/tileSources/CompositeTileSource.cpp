@@ -43,7 +43,7 @@ CompositeTileSource::~CompositeTileSource()
     delete this->_globalMutex;
 }
 
-QPointF CompositeTileSource::ll2qgs(const QPointF &ll, quint8 zoomLevel) const
+QPointF CompositeTileSource::lalo2qgs(const QPointF &ll, quint8 zoomLevel) const
 {
     QMutexLocker lock(_globalMutex);
     if (_childSources.isEmpty())
@@ -53,10 +53,10 @@ QPointF CompositeTileSource::ll2qgs(const QPointF &ll, quint8 zoomLevel) const
     }
 
     //Assume they're all the same. Nothing to do otherwise!
-    return _childSources.at(0)->ll2qgs(ll,zoomLevel);
+    return _childSources.at(0)->lalo2qgs(ll,zoomLevel);
 }
 
-QPointF CompositeTileSource::qgs2ll(const QPointF &qgs, quint8 zoomLevel) const
+QPointF CompositeTileSource::qgs2lalo(const QPointF &qgs, quint8 zoomLevel) const
 {
     QMutexLocker lock(_globalMutex);
     if (_childSources.isEmpty())
@@ -66,7 +66,7 @@ QPointF CompositeTileSource::qgs2ll(const QPointF &qgs, quint8 zoomLevel) const
     }
 
     //Assume they're all the same. Nothing to do otherwise!
-    return _childSources.at(0)->qgs2ll(qgs,zoomLevel);
+    return _childSources.at(0)->qgs2lalo(qgs,zoomLevel);
 }
 
 quint64 CompositeTileSource::tilesOnZoomLevel(quint8 zoomLevel) const

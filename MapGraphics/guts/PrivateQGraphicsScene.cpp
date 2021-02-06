@@ -23,7 +23,8 @@ void PrivateQGraphicsScene::handleMGObjectAdded(MapGraphicsObject * added)
 {
     PrivateQGraphicsObject * qgObj = new PrivateQGraphicsObject(added,_infoSource);
     this->addItem(qgObj);
-
+    //this->addLine(492,248,451,348);
+    //this->addLine(2051,2048,2393,1188);
     //We need a mapping of MapGraphicsObject : QGraphicsObject, so put this in the map
     _mgToqg.insert(added,qgObj);
 }

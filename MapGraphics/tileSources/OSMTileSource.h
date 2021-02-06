@@ -22,9 +22,9 @@ public:
     explicit OSMTileSource(OSMTileSource::OSMTileType tileType = OSMTiles);
     virtual ~OSMTileSource();
 
-    virtual QPointF ll2qgs(const QPointF& ll, quint8 zoomLevel) const;
+    virtual QPointF lalo2qgs(const QPointF& ll, quint8 zoomLevel) const;
 
-    virtual QPointF qgs2ll(const QPointF& qgs, quint8 zoomLevel) const;
+    virtual QPointF qgs2lalo(const QPointF& qgs, quint8 zoomLevel) const;
 
     virtual quint64 tilesOnZoomLevel(quint8 zoomLevel) const;
 

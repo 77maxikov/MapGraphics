@@ -23,24 +23,24 @@ OSMTileSource::~OSMTileSource()
     qDebug() << this << this->name() << "Destructing";
 }
 
-QPointF OSMTileSource::ll2qgs(const QPointF &ll, quint8 zoomLevel) const
+QPointF OSMTileSource::lalo2qgs(const QPointF &lalo, quint8 zoomLevel) const
 {
     const qreal tilesOnOneEdge = pow(2.0,zoomLevel);
     const quint16 tileSize = this->tileSize();
-    qreal x = (ll.x()+180) * (tilesOnOneEdge*tileSize)/360; // coord to pixel!
-    qreal y = (1-(log(tan(PI/4+(ll.y()*deg2rad)/2)) /PI)) /2  * (tilesOnOneEdge*tileSize);
+    qreal x = (lalo.y()+180) * (tilesOnOneEdge*tileSize)/360; // coord to pixel!
+    qreal y = (1.0 - ( log( tan(PI/4.0 +(lalo.x()*deg2rad)/2)) /PI)) /2.0  * (tilesOnOneEdge*tileSize);
 
     return QPoint(int(x), int(y));
 }
 
-QPointF OSMTileSource::qgs2ll(const QPointF &qgs, quint8 zoomLevel) const
+QPointF OSMTileSource::qgs2lalo(const QPointF &qgs, quint8 zoomLevel) const
 {
     const qreal tilesOnOneEdge = pow(2.0,zoomLevel);
     const quint16 tileSize = this->tileSize();
     qreal longitude = (qgs.x()*(360/(tilesOnOneEdge*tileSize)))-180;
     qreal latitude = rad2deg*(atan(sinh((1-qgs.y()*(2/(tilesOnOneEdge*tileSize)))*PI)));
 
-    return QPointF(longitude, latitude);
+    return QPointF(latitude,longitude);
 }
 
 quint64 OSMTileSource::tilesOnZoomLevel(quint8 zoomLevel) const

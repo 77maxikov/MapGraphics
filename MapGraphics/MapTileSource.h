@@ -68,7 +68,7 @@ public:
      * @param zoomLevel the zoom-level used to convert
      * @return QPointF a point in QGraphicsScene coordinates
      */
-    virtual QPointF ll2qgs(const QPointF& ll, quint8 zoomLevel) const=0;
+    virtual QPointF lalo2qgs(const QPointF& ll, quint8 zoomLevel) const=0;
 
     /**
      * @brief Converts from QGraphicsScene coordinates into geo (lat,lon) coordinates. A MapTileSource
@@ -78,7 +78,7 @@ public:
      * @param zoomLevel the zoom-level used to convert
      * @return QPointF a point in geo (lat,lon) coordinates
      */
-    virtual QPointF qgs2ll(const QPointF& qgs, quint8 zoomLevel) const=0;
+    virtual QPointF qgs2lalo(const QPointF& qgs, quint8 zoomLevel) const=0;
 
     /**
      * @brief Pure-virtual method that returns the number of tiles on a given zoom level.

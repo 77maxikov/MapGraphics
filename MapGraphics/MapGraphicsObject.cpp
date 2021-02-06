@@ -140,7 +140,7 @@ qreal MapGraphicsObject::longitude() const
 
 void MapGraphicsObject::setLongitude(qreal nLongitude)
 {
-    this->setPos(QPointF(nLongitude,this->pos().y()));
+    this->setPos(QPointF(this->pos().x(),nLongitude));
 }
 
 qreal MapGraphicsObject::latitude() const
@@ -150,7 +150,7 @@ qreal MapGraphicsObject::latitude() const
 
 void MapGraphicsObject::setLatitude(qreal nLatitude)
 {
-    this->setPos(QPointF(this->pos().x(),nLatitude));
+    this->setPos(QPointF(nLatitude,this->pos().y()));
 }
 
 qreal MapGraphicsObject::zValue() const

@@ -20,29 +20,30 @@ GridTileSource::~GridTileSource()
     qDebug() << this << "destructing";
 }
 
-QPointF GridTileSource::ll2qgs(const QPointF &ll, quint8 zoomLevel) const
+QPointF GridTileSource::lalo2qgs(const QPointF &lalo, quint8 zoomLevel) const
 {
     const qreal tilesOnOneEdge = pow(2.0,zoomLevel);
     const quint16 tileSize = this->tileSize();
-    qreal x = (ll.x()+180.0) * (tilesOnOneEdge*tileSize)/360.0; // coord to pixel!
-    qreal y = (1-(log(tan(PI/4.0+(ll.y()*deg2rad)/2)) /PI)) /2.0  * (tilesOnOneEdge*tileSize);
+
+    qreal x = (lalo.y() + 180.0) * (tilesOnOneEdge*tileSize)/360.0; // coord to pixel!
+    qreal y = (1.0 - ( log( tan(PI/4.0 +(lalo.x()*deg2rad)/2)) /PI)) /2.0  * (tilesOnOneEdge*tileSize);
 
     return QPoint(int(x), int(y));
 }
 
-QPointF GridTileSource::qgs2ll(const QPointF &qgs, quint8 zoomLevel) const
+QPointF GridTileSource::qgs2lalo(const QPointF &qgs, quint8 zoomLevel) const
 {
     const qreal tilesOnOneEdge = pow(2.0,zoomLevel);
     const quint16 tileSize = this->tileSize();
     qreal longitude = (qgs.x()*(360.0/(tilesOnOneEdge*tileSize)))-180.0;
     qreal latitude = rad2deg*(atan(sinh((1.0-qgs.y()*(2.0/(tilesOnOneEdge*tileSize)))*PI)));
 
-    return QPointF(longitude, latitude);
+    return QPointF(latitude,longitude);
 }
 
 quint64 GridTileSource::tilesOnZoomLevel(quint8 zoomLevel) const
 {
-    return pow(4.0,zoomLevel);
+    return (quint64(1))<<(2*zoomLevel);
 }
 
 quint16 GridTileSource::tileSize() const
@@ -94,8 +95,8 @@ void GridTileSource::fetchTile(quint32 x, quint32 y, quint8 z)
     //Longitude
     for(qreal lon = -180.0; lon <= 180.0; lon += everyNDegrees)
     {
-        QPointF geoPos(lon,0.0);
-        QPointF qgsScenePos = this->ll2qgs(geoPos,z);
+        QPointF geoPos(0.0,lon);
+        QPointF qgsScenePos = this->lalo2qgs(geoPos,z);
 
         if (qgsScenePos.x() < leftScenePixel || qgsScenePos.x() > rightScenePixel)
             continue;
@@ -108,8 +109,8 @@ void GridTileSource::fetchTile(quint32 x, quint32 y, quint8 z)
     //Latitude
     for (qreal lat = -90.0; lat < 90.0; lat += everyNDegrees)
     {
-        QPointF geoPos(0.0,lat);
-        QPointF qgsScenePos = this->ll2qgs(geoPos,z);
+        QPointF geoPos(lat,0.0);
+        QPointF qgsScenePos = this->lalo2qgs(geoPos,z);
 
         if (qgsScenePos.y() < topScenePixel || qgsScenePos.y() > bottomScenePixel)
             continue;

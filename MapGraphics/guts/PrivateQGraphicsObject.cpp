@@ -36,27 +36,9 @@ QRectF PrivateQGraphicsObject::boundingRect() const
     if (_mgObj->sizeIsZoomInvariant())
         return _mgObj->boundingRect();
 
-    //Otherwise, assume they're meters and do some conversions!
-    QRectF enuRect = _mgObj->boundingRect();
-
-    //Convert from ENU to lat/lon
-    QPointF latLonCenter = _mgObj->pos();
-    Position latLonCenterPos(latLonCenter, 0.0);
-    QPointF leftLatLon = Conversions::enu2lla(enuRect.left(),
-                                              0.0,
-                                              0.0,
-                                              latLonCenterPos).lonLat();
-    QPointF upLatLon = Conversions::enu2lla(0.0,
-                                            enuRect.top(),
-                                            0.0,
-                                            latLonCenterPos).lonLat();
-
-    qreal lonWidth = 2.0*(latLonCenter.x() - leftLatLon.x());
-    qreal latHeight = 2.0*(upLatLon.y() - latLonCenter.y());
-
+    QRectF latLonRect = _mgObj->boundingRect();
+    latLonRect.moveCenter(_mgObj->pos());
     //Once we've got the rect in lat/lon, we should convert it to scene pixels
-    QRectF latLonRect(leftLatLon.x(),upLatLon.y(),lonWidth,latHeight);
-
     //We need our tile source to do the conversion
     QSharedPointer<MapTileSource> tileSource = _infoSource->tileSource();
     if (tileSource.isNull())
@@ -66,11 +48,35 @@ QRectF PrivateQGraphicsObject::boundingRect() const
     }
 
     int zoomLevel = _infoSource->zoomLevel();
-    QPointF topLeft = tileSource->ll2qgs(latLonRect.topLeft(),zoomLevel);
-    QPointF bottomRight = tileSource->ll2qgs(latLonRect.bottomRight(),zoomLevel);
+    //qDebug() << "topLeft " << latLonRect.topLeft() ;
+    //qDebug() << "bottomRight " << latLonRect.bottomRight() ;
 
-    toRet = QRectF(topLeft,bottomRight);
+
+    QPointF topLeftQGS = tileSource->lalo2qgs(latLonRect.topRight(),zoomLevel);
+
+    QPointF bottomRightQGS = tileSource->lalo2qgs(latLonRect.bottomLeft(),zoomLevel);
+
+    //qDebug() << "topRight " ;
+//    qDebug() << "PrivateQGraphicsObject::boundingRect";
+//    qDebug() << latLonRect.topRight() << "to QGS " << topLeftQGS ;
+    //qDebug() << "bottomLeft ";
+//    qDebug() << latLonRect.bottomLeft() << "to QGS " << bottomRightQGS;
+
+    toRet = QRectF(topLeftQGS,bottomRightQGS);
+
+
+//    qDebug() << "Original rect " << toRet << " with center " << toRet.center();
+    //setPos(toRet.center());
     toRet.moveCenter(QPointF(0,0));
+
+    //toRet.moveBottomLeft(tileSource->lalo2qgs(latLonRect.bottomRight(),zoomLevel));
+
+//    qDebug() << "toRet after move " << toRet;
+//    qDebug() << "Position " << pos();
+
+
+
+
     return toRet;
 }
 
@@ -90,7 +96,7 @@ bool PrivateQGraphicsObject::contains(const QPointF &point) const
         qWarning() << this << "can't do bounding box conversion, null tile source.";
         return false;
     }
-    QPointF geoPoint = tileSource->qgs2ll(scenePoint,_infoSource->zoomLevel());
+    QPointF geoPoint = tileSource->qgs2lalo(scenePoint,_infoSource->zoomLevel());
 
     //Ask our MapGraphicsObject about containment
     return _mgObj->contains(geoPoint);
@@ -99,37 +105,46 @@ bool PrivateQGraphicsObject::contains(const QPointF &point) const
 //pure-virtual from QGraphicsItem
 void PrivateQGraphicsObject::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+//    qDebug() << "PrivateQGraphicsObject::paint: ";
+//    qDebug() << "BR " << boundingRect() << " ScBR " << sceneBoundingRect();
+
     if (_mgObj.isNull())
     {
         qWarning() << this << "could not paint as our MapGraphicsObject is null";
         return;
     }
 
-    painter->save();
+    painter->save();    
     painter->scale(1.0,-1.0);
 
     //Transform painter coordinates to the object's bounding box and then have the MapGraphicsObject do its thing
     if (!_mgObj->sizeIsZoomInvariant())
     {
-        QRectF enuRect = _mgObj->boundingRect();
-        qreal desiredWidthMeters = enuRect.width();
-        qreal desiredHeightMeters = enuRect.height();
+        //painter->drawLine(40,0,80,80);
+
+        QRectF latLonRect = _mgObj->boundingRect();
         QRectF pixelRect = this->boundingRect();
+
         qreal widthPixels = pixelRect.width();
         qreal heightPixels = pixelRect.height();
 
-        qreal scaleX = widthPixels / desiredWidthMeters;
-        qreal scaleY = heightPixels / desiredHeightMeters;
+        //qreal scaleX = widthPixels / desiredWidthMeters;
+        //qreal scaleY = heightPixels / desiredHeightMeters;
+
+        qreal scaleX = widthPixels / latLonRect.height();
+        qreal scaleY = heightPixels / latLonRect.width();
 
         painter->scale(scaleX,scaleY);
+
     }
 
     _mgObj->paint(painter,option,widget);
 
     painter->restore();
 
-    if (this->isSelected())
-        painter->drawRect(this->boundingRect());
+    //if (this->isSelected())
+    //    painter->setPen(Qt::cyan);
+    //    painter->drawRect(this->boundingRect());
 }
 
 //override from QGraphicsItem
@@ -150,7 +165,7 @@ void PrivateQGraphicsObject::contextMenuEvent(QGraphicsSceneContextMenuEvent *ev
     //Convert to geo position for the MapGraphicsObject
     const QPointF qgsScenePos = event->scenePos();
     QSharedPointer<MapTileSource> tileSource = _infoSource->tileSource();
-    QPointF geoScenePos = tileSource->qgs2ll(qgsScenePos,_infoSource->zoomLevel());
+    QPointF geoScenePos = tileSource->qgs2lalo(qgsScenePos,_infoSource->zoomLevel());
     event->setScenePos(geoScenePos);
 
     _mgObj->contextMenuEvent(event);
@@ -175,7 +190,7 @@ QVariant PrivateQGraphicsObject::itemChange(QGraphicsItem::GraphicsItemChange ch
         QSharedPointer<MapTileSource> tileSource = _infoSource->tileSource();
         if (!tileSource.isNull())
         {
-            QPointF geoPos = tileSource->qgs2ll(scenePos,_infoSource->zoomLevel());
+            QPointF geoPos = tileSource->qgs2lalo(scenePos,_infoSource->zoomLevel());
 
             //Hackz
             this->setFlag(QGraphicsItem::ItemSendsScenePositionChanges,false);
@@ -279,7 +294,7 @@ void PrivateQGraphicsObject::wheelEvent(QGraphicsSceneWheelEvent *event)
     //Convert to geo position for the MapGraphicsObject
     const QPointF qgsScenePos = event->scenePos();
     QSharedPointer<MapTileSource> tileSource = _infoSource->tileSource();
-    QPointF geoScenePos = tileSource->qgs2ll(qgsScenePos,_infoSource->zoomLevel());
+    QPointF geoScenePos = tileSource->qgs2lalo(qgsScenePos,_infoSource->zoomLevel());
     event->setScenePos(geoScenePos);
 
     _mgObj->wheelEvent(event);
@@ -319,7 +334,7 @@ void PrivateQGraphicsObject::handleParentChanged()
 void PrivateQGraphicsObject::handlePosChanged()
 {
     //Get the position of the object in lat,lon,alt
-    QPointF geoPos = _mgObj->pos();
+    //QPointF geoPos = _mgObj->pos();
 
     //TODO:If the object has a parent, do stupid stuff here to handle it
 
@@ -328,8 +343,19 @@ void PrivateQGraphicsObject::handlePosChanged()
     if (tileSource.isNull())
         return;
 
+    QRectF latLonRect = _mgObj->boundingRect();
+    latLonRect.moveCenter(_mgObj->pos());
     int zoomLevel = _infoSource->zoomLevel();
-    QPointF qgsPos = tileSource->ll2qgs(geoPos,zoomLevel);
+    QPointF topLeftQGS = tileSource->lalo2qgs(latLonRect.topRight(),zoomLevel);
+    QPointF bottomRightQGS = tileSource->lalo2qgs(latLonRect.bottomLeft(),zoomLevel);
+
+    //qDebug() << "topRight " ;
+    //qDebug() << "PrivateQGraphicsObject::boundingRect";
+    //qDebug() << latLonRect.topRight() << "to QGS " << topLeftQGS ;
+    //qDebug() << "bottomLeft ";
+    //qDebug() << latLonRect.bottomLeft() << "to QGS " << bottomRightQGS;
+
+    QPointF qgsPos = QRectF(topLeftQGS,bottomRightQGS).center();
 
     /*
       We disable the position change notifications to itemChange() before calling setPos so that
@@ -498,7 +524,7 @@ void PrivateQGraphicsObject::convertSceneMouseEventCoordinates(QGraphicsSceneMou
 {
     const QPointF qgsScenePos = event->scenePos();
     QSharedPointer<MapTileSource> tileSource = _infoSource->tileSource();
-    QPointF geoPos = tileSource->qgs2ll(qgsScenePos,_infoSource->zoomLevel());
+    QPointF geoPos = tileSource->qgs2lalo(qgsScenePos,_infoSource->zoomLevel());
 
     _unconvertedSceneMouseCoordinates.insert(event,qgsScenePos);
 
@@ -515,7 +541,7 @@ void PrivateQGraphicsObject::unconvertSceneMouseEventCoorindates(QGraphicsSceneM
     {
         qWarning() << this << "didn't have original scene mouse coordiantes stored for un-conversion";
         QSharedPointer<MapTileSource> tileSource = _infoSource->tileSource();
-        qgsScenePos = tileSource->ll2qgs(event->scenePos(),_infoSource->zoomLevel());
+        qgsScenePos = tileSource->lalo2qgs(event->scenePos(),_infoSource->zoomLevel());
     }
     event->setScenePos(qgsScenePos);
 }
