@@ -329,7 +329,7 @@ void MapGraphicsView::handleChildMouseDoubleClick(QMouseEvent *event)
 void MapGraphicsView::handleChildMouseMove(QMouseEvent *event)
 {
     QPointF scenepo = mapToScene(QPoint(event->x(),event->y()));
-    currentPosChanged(scenepo);
+    emit currentPosChanged(scenepo);
     //event->setAccepted(true);
     event->setAccepted(false);
 
@@ -350,6 +350,9 @@ void MapGraphicsView::handleChildMouseRelease(QMouseEvent *event)
 //protected slot
 void MapGraphicsView::handleChildViewContextMenu(QContextMenuEvent *event)
 {
+    QPointF scenepo = mapToScene(QPoint(event->x(),event->y()));
+    emit setPOI(scenepo);
+    emit askForContextMenu(event);
     event->setAccepted(false);
 }
 

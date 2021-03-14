@@ -75,6 +75,8 @@ public:
 signals:
     void zoomLevelChanged(quint8 nZoom);
     void currentPosChanged(QPointF &pos);
+    void setPOI(QPointF &pos);
+    void askForContextMenu(QContextMenuEvent*);
 
 public slots:
 
